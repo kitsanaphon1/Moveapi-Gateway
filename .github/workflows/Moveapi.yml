@@ -1,0 +1,35 @@
+name: API Promotion Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # เพิ่มอันนี้ไว้ให้กดรันแบบ Manual ได้ด้วยเวลาอยากทดสอบ
+
+jobs:
+  promote-to-nonprod:
+    runs-on: ubuntu-latest
+    environment: non-prod
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. ยิง API ไปสั่งเครื่อง DEV ให้ Export API + Policy ออกมาเป็นไฟล์ .zip
+      - name: Export API Archive from DEV
+        run: |
+          curl -X POST "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/archives/export" \
+            -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/zip" \
+            -d '{
+                  "apis": [{"apiName": "Fulltest_Cus", "apiVersion": "1.0.0"}]
+                }' \
+            --output api_archive.zip
+
+      # 2. นำไฟล์ .zip ที่ได้จากข้อ 1 ไป Import ใส่เครื่อง NON-PROD
+      - name: Import API Archive to NON-PROD
+        run: |
+          curl -X POST "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/archives/import" \
+            -u "${{ secrets.NONPROD_USERNAME }}:${{ secrets.NONPROD_PASSWORD }}" \
+            -F "file=@api_archive.zip"
