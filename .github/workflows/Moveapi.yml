@@ -39,8 +39,14 @@ jobs:
             -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}" \
             -H "Content-Type: application/json" \
             -H "Accept: application/zip" \
+            -H "x-HTTP-Method-Override: GET" \
             -d '{
-                  "apis": [{"apiName": "Fulltest_Cus", "apiVersion": "1.0.0"}]
+                  "types": ["api"],
+                  "condition": "and",
+                  "scope": [
+                    { "attributeName": "apiName", "keyword": "Fulltest_Cus" },
+                    { "attributeName": "apiVersion", "keyword": "1.0.0" }
+                  ]
                 }' \
             --output api_archive.zip
 
