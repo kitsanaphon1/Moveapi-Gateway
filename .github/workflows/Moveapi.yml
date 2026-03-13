@@ -34,21 +34,20 @@ jobs:
       # --- 1. Export API Archive ออกมาจาก DEV ---
       - name: Export API Archive from DEV
         run: |
-          echo "Exporting My_FastAPI v1.0 from DEV..."
+          echo "Exporting Fulltest_Cus v1.0.0 from DEV..."
           curl -fS -X POST "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/archive" \
             -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}" \
             -H "Content-Type: application/json" \
             -H "Accept: application/zip" \
             -d '{
-                  "apis": [{"apiName": "My_FastAPI", "apiVersion": "1.0"}]
+                  "apis": [{"apiName": "Fulltest_Cus", "apiVersion": "1.0.0"}]
                 }' \
             --output api_archive.zip
 
-      # --- (ตัวช่วยชีวิต) ปริ้นท์ Error ออกมาให้ดู ถ้า Export พัง ---
-      - name: Check Error Message (If Export Fails)
-        if: failure()
+      # --- ตรวจสอบว่า Gateway ฟ้อง Error อะไรกลับมา ---
+      - name: Check Response Message
         run: |
-          echo "❌ Export Failed! Server responded with:"
+          echo "Server Response Content:"
           cat api_archive.zip
 
       # --- 2. นำไฟล์ .zip ไป Import ใส่ NON-PROD ---
