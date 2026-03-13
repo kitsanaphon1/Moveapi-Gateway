@@ -19,14 +19,16 @@ jobs:
       - name: Health Check DEV Gateway
         run: |
           echo "Checking DEV Gateway Health..."
-          curl -fS -X GET "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/health"
+          curl -fS -X GET "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/health" \
+            -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}"
           echo -e "\n✅ DEV Gateway is UP and running!"
 
       # --- [NEW] 0.2 ด่านตรวจ: เช็คสถานะ NON-PROD Gateway ---
       - name: Health Check NON-PROD Gateway
         run: |
           echo "Checking NON-PROD Gateway Health..."
-          curl -fS -X GET "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/health"
+          curl -fS -X GET "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/health" \
+            -u "${{ secrets.NONPROD_USERNAME }}:${{ secrets.NONPROD_PASSWORD }}"
           echo -e "\n✅ NON-PROD Gateway is UP and running!"
 
       # --- 1. Export API Archive ออกมาจาก DEV ---
