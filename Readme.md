@@ -15,3 +15,5 @@ IP : 20.198.251.142
 Username: ไอดีที่มีสิทธิ์สั่ง Import (ตั้งค่าใน GitHub Secret ชื่อ NONPROD_USERNAME)
 
 Password: รหัสผ่านของไอดีนั้น (ตั้งค่าใน GitHub Secret ชื่อ NONPROD_PASSWORD)
+
+commit-withnot-jwt
