@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # เพิ่มอันนี้ไว้ให้กดรันแบบ Manual ได้ด้วยเวลาอยากทดสอบ
+  workflow_dispatch: # ปุ่มกดรันแบบ Manual
 
 jobs:
   promote-to-nonprod:
@@ -15,10 +15,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-     # 1. ยิง API ไปสั่ง Dev ให้ Export
+      # --- [NEW] 0.1 ด่านตรวจ: เช็คสถานะ DEV Gateway ---
+      - name: Health Check DEV Gateway
+        run: |
+          echo "Checking DEV Gateway Health..."
+          curl -fS -X GET "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/health"
+          echo -e "\n✅ DEV Gateway is UP and running!"
+
+      # --- [NEW] 0.2 ด่านตรวจ: เช็คสถานะ NON-PROD Gateway ---
+      - name: Health Check NON-PROD Gateway
+        run: |
+          echo "Checking NON-PROD Gateway Health..."
+          curl -fS -X GET "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/health"
+          echo -e "\n✅ NON-PROD Gateway is UP and running!"
+
+      # --- 1. Export API Archive ออกมาจาก DEV ---
       - name: Export API Archive from DEV
         run: |
-          curl -fS -X POST "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/archives/export" \
+          echo "Exporting My_FastAPI v1.0 from DEV..."
+          curl -fS -X POST "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/archive" \
             -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}" \
             -H "Content-Type: application/json" \
             -H "Accept: application/zip" \
@@ -27,14 +42,17 @@ jobs:
                 }' \
             --output api_archive.zip
 
-      # แทรก Step นี้เพื่อดูว่าข้างในไฟล์ zip (ที่โหลดมา 78 bytes) เขียนว่าอะไร
-      - name: Check Error Message
-        if: failure() # ทำงานเฉพาะเมื่อขั้นตอนก่อนหน้าพัง
-        run: cat api_archive.zip
+      # --- (ตัวช่วยชีวิต) ปริ้นท์ Error ออกมาให้ดู ถ้า Export พัง ---
+      - name: Check Error Message (If Export Fails)
+        if: failure()
+        run: |
+          echo "❌ Export Failed! Server responded with:"
+          cat api_archive.zip
 
-      # 2. นำไฟล์ ไป Import
+      # --- 2. นำไฟล์ .zip ไป Import ใส่ NON-PROD ---
       - name: Import API Archive to NON-PROD
         run: |
-          curl -fS -X POST "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/archives/import" \
+          echo "Importing Archive to NON-PROD..."
+          curl -fS -X POST "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/archive" \
             -u "${{ secrets.NONPROD_USERNAME }}:${{ secrets.NONPROD_PASSWORD }}" \
             -F "file=@api_archive.zip"
