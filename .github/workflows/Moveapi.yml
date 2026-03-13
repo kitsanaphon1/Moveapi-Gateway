@@ -4,34 +4,33 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # ปุ่มกดรันแบบ Manual
+  workflow_dispatch:
 
 jobs:
   promote-to-nonprod:
     runs-on: ubuntu-latest
     environment: non-prod
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # --- [NEW] 0.1 ด่านตรวจ: เช็คสถานะ DEV Gateway ---
       - name: Health Check DEV Gateway
         run: |
           echo "Checking DEV Gateway Health..."
           curl -fS -X GET "http://${{ secrets.HOST_DEV }}:5555/rest/apigateway/health" \
             -u "${{ secrets.DEV_USERNAME }}:${{ secrets.DEV_PASSWORD }}"
-          echo -e "\n✅ DEV Gateway is UP and running!"
+          echo ""
+          echo "DEV Gateway is UP"
 
-      # --- [NEW] 0.2 ด่านตรวจ: เช็คสถานะ NON-PROD Gateway ---
       - name: Health Check NON-PROD Gateway
         run: |
           echo "Checking NON-PROD Gateway Health..."
           curl -fS -X GET "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/health" \
             -u "${{ secrets.NONPROD_USERNAME }}:${{ secrets.NONPROD_PASSWORD }}"
-          echo -e "\n✅ NON-PROD Gateway is UP and running!"
+          echo ""
+          echo "NON-PROD Gateway is UP"
 
-      # --- 1. Export API Archive ออกมาจาก DEV ---
       - name: Export API Archive from DEV
         run: |
           echo "Exporting Fulltest_Cus v1.0.0 from DEV..."
@@ -50,16 +49,18 @@ jobs:
                 }' \
             --output api_archive.zip
 
-      # --- ตรวจสอบว่า Gateway ฟ้อง Error อะไรกลับมา ---
-      - name: Check Response Message
+      - name: Validate Exported Archive
         run: |
-          echo "Server Response Content:"
-          cat api_archive.zip
+          echo "Validating exported file..."
+          file api_archive.zip
+          ls -lh api_archive.zip
+          unzip -t api_archive.zip
 
-      # --- 2. นำไฟล์ .zip ไป Import ใส่ NON-PROD ---
       - name: Import API Archive to NON-PROD
         run: |
-          echo "Importing Archive to NON-PROD..."
-          curl -fS -X POST "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/archive" \
+          echo "Importing archive to NON-PROD..."
+          curl -fS -X POST \
+            "http://${{ secrets.HOST_NONPROD }}:5555/rest/apigateway/archive?overwrite=*&preserveAssetState=true" \
             -u "${{ secrets.NONPROD_USERNAME }}:${{ secrets.NONPROD_PASSWORD }}" \
-            -F "file=@api_archive.zip"
+            -H "Accept: application/json" \
+            -F "zipFile=@api_archive.zip;type=application/zip"
